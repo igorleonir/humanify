@@ -52,7 +52,7 @@ await ensureFileExists(filename);
 const code = await fs.readFile(filename, "utf-8");
 
 const PLUGINS = [
-  fixShadowing,
+  //fixShadowing,
   humanify,
   argv.local
     ? nop
