@@ -1,42 +1,54 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer
-mname = "stabilityai/stablecode-instruct-alpha-3b"
+from typing import List
+from enum import Enum
+from typing import Tuple
+from pydantic import BaseModel, constr
+
+import outlines.models as models
+import outlines.text.generate as generate
+import outlines.text as text
+
+class Name(str, Enum):
+    x = "x"
+    y = "y"
+    z = "z"
+    a = "a"
+
+class NameNewnamePair(BaseModel):
+    name: Name
+    newname: constr(min_length=5, max_length=20)
+
+
+class NameNewnamePairs(BaseModel):
+    name_newname_pairs: List[NameNewnamePair]
+
+@text.prompt
+def prompt(system_prompt, user_message):
+    """
+    <s>[INST] <<SYS>>
+    {{ system_prompt }}
+    <</SYS>>
+
+    {{ user_message }} [/INST]
+    Sure! Here's the code with more descriptive variable names:"""
+
+p = prompt("""Task: Rename variables in the given JavaScript code while maintaining its functionality.
+
+Constraints: Use descriptive variable names. Follow camelCase naming convention.""",
+"""Prompt:
+Given the following JavaScript code:
+function a(e,t){var n=[];var r=e.length;var i=0;for(;i<r;i+=t){if(i+t<r){n.push(e.substring(i,i+t))}else{n.push(e.substring(i,r))}}return n}
+
+Rename the variables in the code to make it more readable and maintain its functionality. Use appropriate variable names and follow the camelCase naming convention.
+""")
+
+print(p)
+#mname = "meta-llama/Llama-2-7b-chat-hf"
+mname = "meta-llama/Llama-2-13b-chat-hf"
+#mname = "stabilityai/stablecode-instruct-alpha-3b"
 #mname = "stabilityai/stablecode-completion-alpha-3b"
+model = models.transformers(mname, "mps")
+gen1 = generate.continuation(model, max_tokens=20)
+gen2 = generate.regex(model, r"[a-z][a-zA-Z]{1,15}", max_tokens=10)
 
-tokenizer = AutoTokenizer.from_pretrained(mname)
-model = AutoModelForCausalLM.from_pretrained(
-  mname,
-  trust_remote_code=True,
-  torch_dtype="auto",
-)
-model.to("mps")
-
-input_code = """
-###Instruction
-Code a monad class in Typescript
-
-###Response
-class Monad<T> {
-"""
-
-inputs = tokenizer(input_code, return_tensors="pt", return_token_type_ids=False).to("mps")
-
-last_printed = 0
-
-# Generate new tokens, so that we print the new code every 10 tokens
-# and feed the new tokens back into the model
-for i in range(0, 100):
-  tokens = model.generate(
-    **inputs,
-    max_new_tokens=10,
-    temperature=0.2,
-    do_sample=True,
-    pad_token_id=0,
-  )
-  out = tokenizer.decode(tokens[0], skip_special_tokens=True)
-  inputs = tokenizer(out, return_tensors="pt", return_token_type_ids=False).to("mps")
-
-  # Print the new code
-  print(out[last_printed:], end="")
-  last_printed = len(out)
-
+pass
 
