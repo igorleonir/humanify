@@ -7,6 +7,7 @@ import { ensureFileExists } from "./fs-utils.js";
 import { env } from "./env.js";
 import { nop } from "./plugin-utils.js";
 import fixShadowing from "./fix-shadowing.js";
+import { localReanme } from "./local-rename.js";
 
 const argv = yargs(process.argv.slice(2))
   .example(
@@ -51,14 +52,7 @@ await ensureFileExists(filename);
 
 const code = await fs.readFile(filename, "utf-8");
 
-const PLUGINS = [
-  //fixShadowing,
-  humanify,
-  argv.local
-    ? nop
-    : openai({ apiKey: argv.key ?? env("OPENAI_TOKEN"), use4k: argv["4k"] }),
-  prettier,
-];
+const PLUGINS = [localReanme, prettier];
 
 const formattedCode = await PLUGINS.reduce(
   (p, next) => p.then(next),
@@ -66,3 +60,5 @@ const formattedCode = await PLUGINS.reduce(
 );
 
 await fs.writeFile(argv.output, formattedCode);
+
+process.exit(0); // Kills the zeromq socket
