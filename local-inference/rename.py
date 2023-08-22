@@ -25,7 +25,7 @@ Given the following JavaScript code:
 Rename the variables and functions in the code to make it more readable and maintain its functionality. Use appropriate variable names and follow the camelCase naming convention.""")
 
 def rename(code_before, code_after):
-   p = do_prompt(code_before + code_after) + "\n" + code_before + '''{{gen "varname" temperature=0.5 stop_regex="[^a-zA-Z0-9]"}}'''
+   p = do_prompt(code_before + code_after) + "\n" + code_before + '''{{gen "varname" temperature=0.3 stop_regex="[^a-zA-Z0-9]"}}'''
    print(p)
    result = guidance(p)()
    return result['varname']

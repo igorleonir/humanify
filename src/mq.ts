@@ -17,6 +17,8 @@ export function send<Recv extends {}>(message: Object) {
   }
 }
 
-spawn("python", ["local-inference/inference-server.py"], {
-  stdio: "inherit",
-});
+export function createServer() {
+  spawn("python", ["local-inference/inference-server.py"], {
+    stdio: "inherit",
+  });
+}
