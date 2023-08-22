@@ -1,31 +1,32 @@
-import guidance
 import outlines.text as text
-
-mname = "meta-llama/Llama-2-7b-chat-hf"
-guidance.llm = guidance.llms.Transformers(mname, device="mps", caching=False, temperature=0.5)
+from guidance_config import guidance
 
 @text.prompt
-def prompt(system_prompt, user_message):
+def prompt(system_prompt, user_message, assistant_message):
     """
     <s>[INST] <<SYS>>
     {{ system_prompt }}
     <</SYS>>
 
     {{ user_message }} [/INST]
-    Sure! Here's the code with more descriptive variable and function names:"""
+    {{ assistant_message }}"""
 
-def do_prompt(code):
-  return prompt("""Task: Rename variables and functions in the given JavaScript code while maintaining its functionality.
+def rename(code_before, code_after, var_name, filename):
+  p2 = prompt(
+    """Your task is to read the code in file "{}" and write the purpose of each variable in one sentence.""".format(filename),
+    code_before + code_after,
+    '"' + var_name + '"' + """ is {{gen "vardesc" temperature=1 stop="\n"}}"""
+  )
 
-Constraints: Use descriptive names. Follow camelCase naming convention.""",
-  """Prompt:
-Given the following JavaScript code:
-"""+code+"""
+  result3 = guidance(p2)()
+  print(result3['vardesc'])
 
-Rename the variables and functions in the code to make it more readable and maintain its functionality. Use appropriate variable names and follow the camelCase naming convention.""")
+  p3 = prompt(
+      """You are a Code Assistant.""",
+      """What would be a good name for the following function or a variable?.\n""" + result3['vardesc'],
+      """A good name would be "{{gen "varname" temperature=1 stop_regex="[^a-zA-Z0-9]"}}"""
+  )
 
-def rename(code_before, code_after):
-   p = do_prompt(code_before + code_after) + "\n" + code_before + '''{{gen "varname" temperature=0.3 stop_regex="[^a-zA-Z0-9]"}}'''
-   print(p)
-   result = guidance(p)()
-   return result['varname']
+
+  result4 = guidance(p3)()
+  return result4['varname']

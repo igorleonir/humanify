@@ -1,15 +1,26 @@
 import { transformWithPlugins } from "./babel-utils.js";
 import { createServer, send } from "./mq.js";
+import { isReservedWord } from "./openai/is-reserved-word.js";
 
-const PADDING_CHARS = 400;
+const PADDING_CHARS = 200;
 
 export const localReanme = () => {
   createServer();
 
   return async (code: string): Promise<string> => {
+    const { description, filename } = await send<{
+      description: string;
+      filename: string;
+    }>({
+      type: "define",
+      code: code.slice(0, PADDING_CHARS * 2),
+    });
+    console.log(description, filename);
+
     let didChange = false;
     let newCode = code;
     let pos = 0;
+    let renames: string[] = [];
     do {
       didChange = false;
       newCode = await transformWithPlugins(newCode, [
@@ -28,9 +39,19 @@ export const localReanme = () => {
                   start
                 ),
                 after: newCode.slice(start, start + PADDING_CHARS),
+                varname: path.node.name,
+                description,
+                filename,
               });
               console.log(renamed);
-              path.scope.rename(path.node.name, renamed);
+              let safeRenamed = isReservedWord(renamed)
+                ? `_${renamed}`
+                : renamed;
+              while (renames.includes(safeRenamed)) {
+                safeRenamed = `_${safeRenamed}`;
+              }
+              renames.push(safeRenamed);
+              path.scope.rename(path.node.name, safeRenamed);
               didChange = true;
               pos = start;
             },
