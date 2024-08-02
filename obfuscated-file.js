@@ -1,0 +1,1 @@
+console.log( 'obfuscated-file.js' );
